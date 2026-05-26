@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>经期管理助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdf6f0; --card: #fffaf5; --cal-bg: #fff;
+  --text: #3d2c2c; --muted: #b8a0a0;
+  --accent: #e07a7a; --accent-light: #f5d5d5; --accent-deep: #c45c5c;
+  --period: #d4687c; --period-light: #fce4e8;
+  --ovulation: #6db9a0; --ovulation-light: #e0f2ec;
+  --fertile: #e8b86d; --fertile-light: #fdf2e0;
+  --safe: #8faec4; --safe-light: #e8f0f6;
+  --border: #e8dcd4;
+  --shadow: 0 4px 16px rgba(61,44,44,0.08);
+  --radius: 16px;
+  --font-d: 'Noto Serif SC', serif;
+  --font-b: 'Noto Sans SC', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; background-image: radial-gradient(ellipse at 20% 20%, rgba(224,122,122,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(109,185,160,0.04) 0%, transparent 50%); }
+.container { max-width: 480px; margin: 0 auto; padding: 16px 16px 100px; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 16px; }
+.hd-brand { display: flex; align-items: center; gap: 10px; }
+.hd-logo { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; }
+.hd-title { font-family: var(--font-d); font-size: 20px; font-weight: 700; }
+.hd-sub { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.settings-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: 18px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.settings-btn:hover { background: var(--accent-light); }
+
+.summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.sum-card { background: var(--card); border-radius: var(--radius); padding: 16px 14px; text-align: center; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(61,44,44,0.06); }
+.sum-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; }
+.sum-val { font-family: var(--font-d); font-size: 26px; font-weight: 700; }
+.sum-val.pc { color: var(--period); }
+.sum-val.oc { color: var(--ovulation); }
+.sum-val.cc { color: var(--accent); }
+.sum-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.cal-section { background: var(--cal-bg); border-radius: 24px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 16px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.cal-month { font-family: var(--font-d); font-size: 18px; font-weight: 600; }
+.nav-btns { display: flex; gap: 4px; }
+.nav-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.nav-btn.today { width: auto; padding: 0 14px; font-size: 12px; font-family: var(--font-b); }
+.wkd-row { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8px; }
+.wkd { font-size: 11px; color: var(--muted); padding: 4px 0; }
+.wkd.we { color: var(--accent); opacity: 0.6; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.day { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: 1.5px solid transparent; transition: 0.15s; }
+.day:hover { background: var(--bg); }
+.day.today { font-weight: 700; border: 2px solid var(--accent); box-shadow: 0 0 0 3px rgba(224,122,122,0.1); }
+.day.period { background: var(--period-light); color: var(--period); }
+.day.ovulation { background: var(--ovulation-light); color: var(--ovulation); font-weight: 600; }
+.day.fertile { background: var(--fertile-light); color: var(--fertile); }
+.day.safe { background: var(--safe-light); color: var(--safe); }
+.day.predicted { background: linear-gradient(135deg, var(--period-light), #e8e4d8); color: var(--period); font-style: italic; }
+.day-dot { width: 4px; height: 4px; border-radius: 50%; margin-top: 1px; }
+.day.period .day-dot { background: var(--period); width: 5px; height: 5px; }
+.day.ovulation .day-dot { background: var(--ovulation); width: 6px; height: 6px; }
+.day.fertile .day-dot { background: var(--fertile); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+.leg-d { width: 8px; height: 8px; border-radius: 50%; }
+.leg-d.p { background: var(--period); }
+.leg-d.o { background: var(--ovulation); }
+.leg-d.f { background: var(--fertile); }
+.leg-d.s { background: var(--safe); }
+.leg-d.pp { background: linear-gradient(135deg, var(--period), #e8e4d8); }
+
+.actions { display: flex; gap: 10px; margin-bottom: 16px; }
+.act-btn { flex: 1; padding: 14px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); cursor: pointer; font-family: var(--font-b); font-size: 13px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(61,44,44,0.06); }
+.act-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.act-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.act-btn.primary:hover { background: var(--accent-deep); }
+.act-icon { font-size: 22px; }
+
+.tip { background: var(--fertile-light); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-size: 12px; color: #8c6e3d; line-height: 1.6; display: flex; gap: 8px; border: 1px solid rgba(232,184,109,0.3); }
+.tip-icon { font-size: 18px; flex-shrink: 0; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 20px; background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 3px; }
+.tab { flex: 1; padding: 10px; text-align: center; font-size: 13px; cursor: pointer; border-radius: 8px; color: var(--muted); border: none; background: transparent; font-family: var(--font-b); }
+.tab.active { background: var(--accent); color: white; }
+
+.hist-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--card); border-radius: var(--radius); margin-bottom: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(61,44,44,0.06); }
+.hist-info h4 { font-size: 14px; font-weight: 500; }
+.hist-info p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.hist-badge { font-size: 11px; padding: 4px 10px; border-radius: 50px; background: var(--accent-light); color: var(--accent-deep); }
+.hist-del { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.hist-del:hover { background: var(--period-light); color: var(--period); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-card { padding: 16px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(61,44,44,0.06); }
+.stat-label { font-size: 11px; color: var(--muted); }
+.stat-val { font-family: var(--font-d); font-size: 24px; font-weight: 700; margin-top: 4px; }
+.stat-val span { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-text { font-size: 13px; line-height: 1.6; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(61,44,44,0.3); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s; }
+.modal { background: var(--card); border-radius: 24px 24px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 480px; box-shadow: 0 8px 32px rgba(61,44,44,0.1); animation: slideUp 0.3s ease; max-height: 80vh; overflow-y: auto; }
+.modal-hdl { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 20px; }
+.modal h3 { font-family: var(--font-d); font-size: 18px; font-weight: 600; margin-bottom: 20px; text-align: center; }
+
+.fg { margin-bottom: 16px; }
+.fl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.fi { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-family: var(--font-b); font-size: 14px; color: var(--text); outline: none; }
+.fi:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(224,122,122,0.08); }
+.fr { display: flex; gap: 10px; }
+.fr .fg { flex: 1; }
+.fa { display: flex; gap: 10px; margin-top: 24px; }
+.btn { flex: 1; padding: 13px; border-radius: 10px; font-family: var(--font-b); font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+.btn-p { background: var(--accent); color: white; }
+.btn-p:hover { background: var(--accent-deep); }
+.btn-s { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.btn-s:hover { background: var(--border); }
+.btn-d { background: transparent; color: var(--period); border: 1px solid var(--period-light); }
+.btn-d:hover { background: var(--period-light); }
+
+.note-ta { width: 100%; min-height: 80px; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-family: var(--font-b); font-size: 13px; resize: vertical; outline: none; }
+.note-ta:focus { border-color: var(--accent); }
+
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 10px 24px; border-radius: 50px; font-size: 13px; z-index: 200; animation: toastIn 0.3s ease; box-shadow: 0 8px 32px rgba(61,44,44,0.1); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <header class="header">
+    <div class="hd-brand">
+      <div class="hd-logo">🌸</div>
+      <div>
+        <div class="hd-title">经期管理助手</div>
+        <div class="hd-sub">PERIOD TRACKER</div>
+      </div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">⚙</button>
+  </header>
+
+  <div class="summary">
+    <div class="sum-card">
+      <div class="sum-label">下次经期</div>
+      <div class="sum-val pc" id="sNext"></div>
+      <div class="sum-unit" id="sNextDate"></div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">排卵日</div>
+      <div class="sum-val oc" id="sOv"></div>
+      <div class="sum-unit" id="sOvDate"></div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">当前周期</div>
+      <div class="sum-val cc" id="sCycle"></div>
+      <div class="sum-unit" id="sPhase"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="act-btn primary" onclick="openPeriodModal()"><span class="act-icon">📝</span>记录经期</button>
+    <button class="act-btn" onclick="openNoteModal()"><span class="act-icon">💬</span>添加备注</button>
+    <button class="act-btn" onclick="scrollToHist()"><span class="act-icon">📋</span>历史记录</button>
+  </div>
+
+  <div class="cal-section">
+    <div class="cal-nav">
+      <span class="cal-month" id="calMonth"></span>
+      <div class="nav-btns">
+        <button class="nav-btn today" onclick="goToday()">今天</button>
+        <button class="nav-btn" onclick="prevM()">◀</button>
+        <button class="nav-btn" onclick="nextM()">▶</button>
+      </div>
+    </div>
+    <div class="wkd-row"><div class="wkd we">日</div><div class="wkd">一</div><div class="wkd">二</div><div class="wkd">三</div><div class="wkd">四</div><div class="wkd">五</div><div class="wkd we">六</div></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="legend">
+      <div class="leg"><span class="leg-d p"></span>经期</div>
+      <div class="leg"><span class="leg-d o"></span>排卵日</div>
+      <div class="leg"><span class="leg-d f"></span>易孕期</div>
+      <div class="leg"><span class="leg-d s"></span>安全期</div>
+      <div class="leg"><span class="leg-d pp"></span>预测经期</div>
+    </div>
+  </div>
+
+  <div class="tip" id="tipBox"><span class="tip-icon">💡</span><span id="tipText">记录经期，开始智能管理生理周期</span></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('hist')">历史记录</button>
+    <button class="tab" onclick="switchTab('stats')">周期统计</button>
+  </div>
+
+  <div id="tabHist"><div class="hist-list" id="histList"><div class="empty"><div class="empty-icon">📋</div><div class="empty-text">还没有经期记录<br>点击「记录经期」开始吧</div></div></div></div>
+  <div id="tabStats" style="display:none;">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-label">平均周期</div><div class="stat-val" id="avgCyc">-- <span>天</span></div></div>
+      <div class="stat-card"><div class="stat-label">平均经期</div><div class="stat-val" id="avgPer">-- <span>天</span></div></div>
+      <div class="stat-card"><div class="stat-label">记录次数</div><div class="stat-val" id="totalRec">0 <span>次</span></div></div>
+      <div class="stat-card"><div class="stat-label">周期规律性</div><div class="stat-val" id="reg">--</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="perMod" style="display:none;">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <h3>记录经期</h3>
+    <div class="fg"><label class="fl">经期开始日期</label><input type="date" class="fi" id="perStart"></div>
+    <div class="fr"><div class="fg"><label class="fl">持续天数</label><input type="number" class="fi" id="perDur" min="1" max="14" value="5"></div><div class="fg"><label class="fl">周期天数</label><input type="number" class="fi" id="cycLen" min="20" max="45" value="28"></div></div>
+    <div class="fa"><button class="btn btn-s" onclick="closeMod('perMod')">取消</button><button class="btn btn-p" onclick="savePeriod()">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="setMod" style="display:none;">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <h3>个性化设置</h3>
+    <div class="fg"><label class="fl">默认周期天数</label><input type="number" class="fi" id="defCyc" min="20" max="45" value="28"></div>
+    <div class="fg"><label class="fl">默认经期天数</label><input type="number" class="fi" id="defDur" min="1" max="14" value="5"></div>
+    <div class="fg"><label class="fl">黄体期天数</label><input type="number" class="fi" id="lut" min="10" max="17" value="14"></div>
+    <div class="fa"><button class="btn btn-d" onclick="clearAll()">清除所有数据</button><button class="btn btn-p" onclick="saveSets()">保存设置</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="noteMod" style="display:none;">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <h3>添加备注</h3>
+    <div class="fg"><label class="fl">日期</label><input type="date" class="fi" id="noteDate"></div>
+    <div class="fg"><label class="fl">备注内容</label><textarea class="note-ta" id="noteCont" placeholder="记录身体感受、症状、情绪等..."></textarea></div>
+    <div class="fa"><button class="btn btn-s" onclick="closeMod('noteMod')">取消</button><button class="btn btn-p" onclick="saveNote()">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dayMod" style="display:none;">
+  <div class="modal">
+    <div class="modal-hdl"></div>
+    <h3 id="dayTit">日期详情</h3>
+    <div id="dayCont"></div>
+    <div class="fa"><button class="btn btn-s" onclick="closeMod('dayMod')">关闭</button></div>
+  </div>
+</div>
+
+<div id="toastCtr"></div>
+
+<script>
+var data=[], notes={}, sets={defCyc:28, defDur:5, lut:14}, cy=0, cm=0;
+function load(){ try{var r=localStorage.getItem('pd');if(r)data=JSON.parse(r);r=localStorage.getItem('pn');if(r)notes=JSON.parse(r);r=localStorage.getItem('ps');if(r)sets=Object.assign(sets,JSON.parse(r));}catch(e){data=[];notes={};} }
+function sd(){ localStorage.setItem('pd',JSON.stringify(data)); }
+function sn(){ localStorage.setItem('pn',JSON.stringify(notes)); }
+function ss(){ localStorage.setItem('ps',JSON.stringify(sets)); }
+function fd(y,m,d){ return y+'-'+('0'+m).slice(-2)+'-'+('0'+d).slice(-2); }
+function pd(s){ var p=s.split('-').map(Number); return {y:p[0],m:p[1],d:p[2],dt:new Date(p[0],p[1]-1,p[2])}; }
+function dd(a,b){ return Math.round((b.dt-a.dt)/86400000); }
+
+function getPeriodDays(){
+  var m={}; data.forEach(function(r){ var s=pd(r.sd); for(var i=0;i<r.dur;i++){ var d=new Date(s.dt); d.setDate(d.getDate()+i); m[fd(d.getFullYear(),d.getMonth()+1,d.getDate())]='period'; } }); return m;
+}
+function getPredictDays(){
+  var m={}; if(!data.length)return m; var s=[].concat(data).sort(function(a,b){return pd(a.sd).dt-pd(b.sd).dt}), lr=s[s.length-1], ls=pd(lr.sd), cl=lr.cl||sets.defCyc, dur=lr.dur||sets.defDur, cs=[];
+  for(var i=0;i<s.length-1;i++)cs.push(dd(pd(s[i].sd),pd(s[i+1].sd)));
+  var ac=cs.length?Math.round(cs.reduce(function(a,b){return a+b;},0)/cs.length):cl;
+  for(var p=1;p<=6;p++){ var ps=new Date(ls.dt); ps.setDate(ps.getDate()+ac*p); for(var d=0;d<dur;d++){ var pd=new Date(ps); pd.setDate(pd.getDate()+d); var k=fd(pd.getFullYear(),pd.getMonth()+1,pd.getDate()); if(!m[k])m[k]='predicted'; } } return m;
+}
+function getOvDays(period, predicted){
+  var m={}, ps=new Set(), lut=sets.lut; data.forEach(function(r){ var s=pd(r.sd), cl=r.cl||sets.defCyc, ns=new Date(s.dt); ns.setDate(ns.getDate()+cl); var ov=new Date(ns); ov.setDate(ov.getDate()-lut); var k=fd(ov.getFullYear(),ov.getMonth()+1,ov.getDate()); if(!ps.has(k)&&!period[k]){m[k]='ovulation';ps.add(k);} for(var d=-5;d<=1;d++){ var f=new Date(ov); f.setDate(f.getDate()+d); var fk=fd(f.getFullYear(),f.getMonth()+1,f.getDate()); if(!ps.has(fk)&&!period[fk]&&!m[fk]&&d!==0){m[fk]='fertile';ps.add(fk);} } });
+  var s=[].concat(data).sort(function(a,b){return pd(a.sd).dt-pd(b.sd).dt}); if(s.length){ var lr=s[s.length-1], ls=pd(lr.sd), cl=lr.cl||sets.defCyc, cs=[]; for(var i=0;i<s.length-1;i++)cs.push(dd(pd(s[i].sd),pd(s[i+1].sd))); var ac=cs.length?Math.round(cs.reduce(function(a,b){return a+b;},0)/cs.length):cl; for(var p=1;p<=3;p++){ var ns=new Date(ls.dt); ns.setDate(ns.getDate()+ac*p); var ov=new Date(ns); ov.setDate(ov.getDate()-lut); var k=fd(ov.getFullYear(),ov.getMonth()+1,ov.getDate()); if(!ps.has(k)&&!period[k]&&!predicted[k]){m[k]='predicted-ov';ps.add(k);} for(var d=-5;d<=1;d++){ var f=new Date(ov); f.setDate(f.getDate()+d); var fk=fd(f.getFullYear(),f.getMonth()+1,f.getDate()); if(!ps.has(fk)&&!period[fk]&&!predicted[fk]&&!m[fk]&&d!==0){m[fk]='predicted-fertile';ps.add(fk);} } } } return m;
+}
+
+function render(){
+  var per=getPeriodDays(), pred=getPredictDays(), ov=getOvDays(per,pred);
+  document.getElementById('calMonth').textContent=cy+'年'+cm+'月';
+  var g=document.getElementById('calGrid'); g.innerHTML='';
+  var fd=new Date(cy,cm-1,1).getDay(), dim=new Date(cy,cm,0).getDate(), td=new Date(), tk=fd(td.getFullYear(),td.getMonth()+1,td.getDate());
+  for(var i=0;i<fd;i++){var e=document.createElement('div');e.className='day';g.appendChild(e);}
+  for(var d=1;d<=dim;d++){var dk=fd(cy,cm,d),c=document.createElement('div');c.className='day';c.innerHTML='<span>'+d+'</span><span class="day-dot"></span>';if(dk===tk)c.classList.add('today');if(per[dk])c.classList.add('period');else if(ov[dk]==='ovulation'||ov[dk]==='predicted-ov')c.classList.add('ovulation');else if(ov[dk]==='fertile'||ov[dk]==='predicted-fertile')c.classList.add('fertile');else if(pred[dk])c.classList.add('predicted');if(notes[dk]){var dt=c.querySelector('.day-dot');dt.style.width='5px';dt.style.height='5px';dt.style.background='var(--accent)';}c.onclick=function(k,pd,ovt,prd){return function(){showDay(k,pd,ovt,prd);};}(dk,per[dk],ov[dk],pred[dk]);g.appendChild(c);} upSmr(per,pred,ov);
+}
+
+function upSmr(per,pred,ov){
+  var td=new Date(), tk=fd(td.getFullYear(),td.getMonth()+1,td.getDate()), s=[].concat(data).sort(function(a,b){return pd(a.sd).dt-pd(b.sd).dt}), np=null, npl=null;
+  for(var k in pred){if(pred[k]==='predicted'&&k>=tk){var dt=pd(k);if(!np||dt.dt<np){np=dt.dt;npl=dd(pd(tk),dt);var ek=k;for(var k2 in pred){if(k2>=ek&&pred[k2]==='predicted'){var kp=pd(k2);if(dd(pd(ek),kp)<10)ek=k2;}}}}} }
+  var no=null,nol=null; for(var k in ov){if(k>=tk&&(ov[k]==='ovulation'||ov[k]==='predicted-ov')){no=pd(k).dt;nol=dd(pd(tk),pd(k));break;} }
+  document.getElementById('sNext').textContent=npl!==null?(npl===0?'今天':npl<0?Math.abs(npl)+'天前':npl+'天后'):'--';
+  document.getElementById('sNextDate').textContent=np?(np.getMonth()+1)+'月'+np.getDate()+'日':'请先记录经期';
+  document.getElementById('sOv').textContent=nol!==null?(nol===0?'今天':nol+'天后'):'--';
+  document.getElementById('sOvDate').textContent=no?(no.getMonth()+1)+'月'+no.getDate()+'日':'';
+  var cd='--',ph=''; if(s.length){ var lr=s[s.length-1], cday=dd(pd(lr.sd),pd(tk))+1, dur=lr.dur||sets.defDur, cl=lr.cl||sets.defCyc, lut=sets.lut;
+    if(cday<=dur)ph='经期中'; else if(cday<=cl-lut-5)ph='卵泡期'; else if(cday<=cl-lut+1)ph='排卵期'; else ph='黄体期'; cd='第'+cday+'天'; }
+  document.getElementById('sCycle').textContent=cd; document.getElementById('sPhase').textContent=ph;
+  var tip=''; if(ph==='经期中')tip='注意保暖，避免生冷食物，保持充足睡眠 💤'; else if(ph==='卵泡期')tip='新陈代谢旺盛，适合运动减肥 ✨'; else if(ph==='排卵期')tip='受孕几率最高时期，注意避孕或把握备孕时机 🥚'; else if(ph==='黄体期')tip='可能出现情绪波动，适当补充维生素B6和镁 🍫'; else tip='记录经期，开始智能管理生理周期'; document.getElementById('tipText').textContent=tip;
+}
+
+function showDay(dk,pt,ot,prt){
+  var p=pd(dk); document.getElementById('dayTit').textContent=p.y+'年'+p.m+'月'+p.d+'日'; var h='';
+  if(pt)h+='<div style="padding:10px;background:var(--period-light);border-radius:10px;margin-bottom:8px;color:var(--period);">🔴 经期</div>';
+  if(ot==='ovulation')h+='<div style="padding:10px;background:var(--ovulation-light);border-radius:10px;margin-bottom:8px;color:var(--ovulation);">🥚 排卵日</div>';
+  if(ot==='predicted-ov')h+='<div style="padding:10px;background:var(--ovulation-light);border-radius:10px;margin-bottom:8px;color:var(--ovulation);">🥚 预测排卵日</div>';
+  if(ot==='fertile'||ot==='predicted-fertile')h+='<div style="padding:10px;background:var(--fertile-light);border-radius:10px;margin-bottom:8px;color:var(--fertile);">🌼 易孕期</div>';
+  if(prt)h+='<div style="padding:10px;background:var(--bg);border-radius:10px;margin-bottom:8px;color:var(--period);border:1px dashed var(--period-light);">📅 预测经期</div>';
+  if(notes[dk])h+='<div style="margin-top:12px;"><strong style="font-size:12px;color:var(--muted);">备注：</strong><p style="margin-top:4px;font-size:13px;line-height:1.6;">'+notes[dk]+'</p></div>';
+  if(!pt&&!ot&&!prt&&!notes[dk])h='<div style="text-align:center;padding:20px;color:var(--muted);">无特殊标记</div>';
+  document.getElementById('dayCont').innerHTML=h; document.getElementById('dayMod').style.display='flex';
+}
+
+function renderHist(){
+  var l=document.getElementById('histList'); if(!data.length){l.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">还没有经期记录<br>点击「记录经期」开始吧</div></div>';return;}
+  var s=[].concat(data).sort(function(a,b){return pd(b.sd).dt-pd(a.sd).dt});
+  l.innerHTML=s.map(function(r,i){ var st=pd(r.sd), e=new Date(st.dt); e.setDate(e.getDate()+r.dur-1), oi=data.indexOf(r);
+    return '<div class="hist-item"><div class="hist-info"><h4>'+st.m+'月'+st.d+'日 — '+(e.getMonth()+1)+'月'+e.getDate()+'日</h4><p>持续 '+r.dur+' 天 · 周期 '+(r.cl||sets.defCyc)+' 天</p></div><div class="hist-badge">第'+(s.length-i)+'次</div><button class="hist-del" onclick="delRec('+oi+')">×</button></div>'; }).join('');
+}
+
+function renderStats(){
+  if(!data.length){document.getElementById('avgCyc').innerHTML='-- <span>天</span>';document.getElementById('avgPer').innerHTML='-- <span>天</span>';document.getElementById('totalRec').innerHTML='0 <span>次</span>';document.getElementById('reg').textContent='--';return;}
+  var s=[].concat(data).sort(function(a,b){return pd(a.sd).dt-pd(b.sd).dt}), cs=[];
+  for(var i=0;i<s.length-1;i++)cs.push(dd(pd(s[i].sd),pd(s[i+1].sd)));
+  var ac=cs.length?Math.round(cs.reduce(function(a,b){return a+b;},0)/cs.length):(s[s.length-1].cl||sets.defCyc);
+  var ap=Math.round(s.reduce(function(a,b){return a+(b.dur||sets.defDur);},0)/s.length), reg='--';
+  if(cs.length>=2){var v=Math.sqrt(cs.reduce(function(sc,c){return sc+Math.pow(c-ac,2);},0)/cs.length);reg=v<=2?'非常规律 ✅':v<=5?'比较规律 👍':'不太规律 ⚠️';}else if(s.length>=2)reg='数据不足';else reg='需要更多记录';
+  document.getElementById('avgCyc').innerHTML=ac+' <span>天</span>';document.getElementById('avgPer').innerHTML=ap+' <span>天</span>';document.getElementById('totalRec').innerHTML=data.length+' <span>次</span>';document.getElementById('reg').textContent=reg;
+}
+
+function openPeriodModal(){ var t=new Date(); document.getElementById('perStart').value=fd(t.getFullYear(),t.getMonth()+1,t.getDate()); document.getElementById('perDur').value=sets.defDur; document.getElementById('cycLen').value=sets.defCyc; document.getElementById('perMod').style.display='flex'; }
+function savePeriod(){ var sdv=document.getElementById('perStart').value, dur=parseInt(document.getElementById('perDur').value)||5, cl=parseInt(document.getElementById('cycLen').value)||28; if(!sdv){t('请选择日期');return;} if(dur<1||dur>14){t('经期天数应在1-14天');return;} if(cl<20||cl>45){t('周期天数应在20-45天');return;} var ei=data.findIndex(function(r){return r.sd===sdv;}); if(ei>=0)data[ei]={sd:sdv,dur:dur,cl:cl,ts:new Date().toISOString()}; else data.push({sd:sdv,dur:dur,cl:cl,ts:new Date().toISOString()}); data.sort(function(a,b){return pd(a.sd).dt-pd(b.sd).dt;}); sd(); closeMod('perMod'); rall(); t('经期记录已保存 ✓'); }
+function delRec(i){if(i<0||i>=data.length)return;data.splice(i,1);sd();rall();t('记录已删除');}
+function openNoteModal(){ var t=new Date(), dk=fd(t.getFullYear(),t.getMonth()+1,t.getDate()); document.getElementById('noteDate').value=dk; document.getElementById('noteCont').value=notes[dk]||''; document.getElementById('noteMod').style.display='flex'; }
+function saveNote(){ var dk=document.getElementById('noteDate').value, c=document.getElementById('noteCont').value.trim(); if(!dk){t('请选择日期');return;} if(c)notes[dk]=c; else delete notes[dk]; sn(); closeMod('noteMod'); rall(); t('备注已保存 ✓'); }
+function openSettings(){ document.getElementById('defCyc').value=sets.defCyc; document.getElementById('defDur').value=sets.defDur; document.getElementById('lut').value=sets.lut; document.getElementById('setMod').style.display='flex'; }
+function saveSets(){ sets.defCyc=parseInt(document.getElementById('defCyc').value)||28; sets.defDur=parseInt(document.getElementById('defDur').value)||5; sets.lut=parseInt(document.getElementById('lut').value)||14; ss(); closeMod('setMod'); rall(); t('设置已保存 ✓'); }
+function clearAll(){ if(confirm('确定清除所有数据？此操作不可恢复！')){data=[];notes={};sd();sn();closeMod('setMod');rall();t('所有数据已清除');} }
+function closeMod(id){ document.getElementById(id).style.display='none'; }
+function prevM(){ if(cm===1){cm=12;cy--;}else cm--; render(); }
+function nextM(){ if(cm===12){cm=1;cy++;}else cm++; render(); }
+function goToday(){ var t=new Date();cy=t.getFullYear();cm=t.getMonth()+1;render(); }
+function switchTab(t){ document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');}); event.target.classList.add('active'); document.getElementById('tabHist').style.display=t==='hist'?'block':'none'; document.getElementById('tabStats').style.display=t==='stats'?'block':'none'; }
+function scrollToHist(){ document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');}); document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('tabHist').style.display='block'; document.getElementById('tabStats').style.display='none'; document.getElementById('histList').scrollIntoView({behavior:'smooth'}); }
+function t(msg){ var c=document.getElementById('toastCtr'), e=document.createElement('div'); e.className='toast';e.textContent=msg;c.appendChild(e);setTimeout(function(){e.remove();},2000); }
+function rall(){ render(); renderHist(); renderStats(); }
+
+document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.style.display='none';});});
+var tdt=new Date(); cy=tdt.getFullYear(); cm=tdt.getMonth()+1; load(); rall();
+</script>
+</body>
+</html>
